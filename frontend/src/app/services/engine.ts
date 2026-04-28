@@ -1,20 +1,22 @@
 import { Injectable } from '@angular/core';
+import { Constraints } from '../model/constraints';
 
 @Injectable({
   providedIn: 'root',
 })
 export class Engine {
-  private constraints: Constraints[] = [];
-  private equations: number[][] = [];
-  private objective: number[] = [];
-  private rhs: number[] = [];
-  private basis: string[] = [];
-  private variables: string[] = [];
-  private type!: ProblemType;
-  private nConstraints!: number;
-  private nVariables!: number;
-  private enteringV!: string;
-  private leavingV!: string;
+  public constraints: Constraints[] = [];
+  public equations: number[][] = [];
+  public objective: number[] = [];
+  public result: number = 0;
+  public rhs: number[] = [];
+  public basis: string[] = [];
+  public variables: string[] = [];
+  public type!: ProblemType;
+  public nConstraints!: number;
+  public nVariables!: number;
+  public enteringV!: string;
+  public leavingV!: string;
 
   public simplex() {
     // this is done to unify the logic of min and max problems, by turning a min problem into a max one
@@ -23,18 +25,26 @@ export class Engine {
 
     // standardize
     this.standardize();
+    console.log(this.result);
+    
 
     // set pivots
     this.basisTranformation();
+    console.log(this.result);
+    
 
     // simplex loop until the problem is optimized
     while (!this.isOptimized()) {
+      this.setEnteringAndLeavingVariables();
+      console.log("looping");
       
 
 
       this.basisTranformation();
     }
 
+    console.log(this.result);
+    
   }
 
   private flipSignOfObjfn() {
@@ -66,13 +76,14 @@ export class Engine {
     this.objective = [...this.objective, 0];
     this.nVariables++;
     // TODO: handle artificials aside from surpluses. all cases ya3ny
-    this.variables = [...this.variables, `s${this.nVariables}`];
+    this.variables = [...this.variables, `s${this.nVariables - this.basis.length + 1}`];
   }
 
   // checks whether objective function is optimized
   private isOptimized(): boolean {
     for (let num of this.objective) {
       // return false if any entry is less than zero
+      
       if (num < 0) return false;
     }
     return true;
@@ -105,12 +116,14 @@ export class Engine {
 
     let mostpstve = ratios[0], imostpstve = 0;
     for (let i = 0; i < this.nConstraints; i++) {
-      if (mostpstve < ratios[i]) {
+      if (mostpstve > ratios[i] && ratios[i] > 0) {
         mostpstve = ratios[i];
         imostpstve = i;
       }
     }
-
+    console.log("Ratios: ", ratios);
+    
+    
     return imostpstve;
   }
 
@@ -120,9 +133,20 @@ export class Engine {
 
     this.leavingV = this.basis[row];
     this.enteringV = this.variables[column]
+    console.log("Entering: ", this.enteringV);
+    console.log("Leaving: ", this.leavingV);
+
+    //set entering variable
+    this.basis[row] = this.enteringV;
+    console.log("Basis", this.basis);
+    
   }
 
   private basisTranformation() {
+    console.log(this.basis);
+    
+    console.log(this.variables);
+    
     for (let base of this.basis) {
       // find index of base element
       let row = this.basis.findIndex(b => b == base);
@@ -161,6 +185,7 @@ export class Engine {
       for (let i = 0; i < this.nVariables; i++) {
         this.objective[i] -= this.equations[row][i] * factor;
       }
+      this.result -= this.rhs[row] * factor;
       // to make sure bardo
       this.objective[pivotIndex] = 0;
     }
