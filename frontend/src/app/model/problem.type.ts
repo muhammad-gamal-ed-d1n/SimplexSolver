@@ -1,0 +1,3 @@
+enum ProblemType {
+    MAX, MIN
+}
