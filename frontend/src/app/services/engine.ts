@@ -17,6 +17,7 @@ export class Engine {
   public nVariables!: number;
   public enteringV!: string;
   public leavingV!: string;
+  private nSurplus: number = 0;
 
   public simplex() {
     // this is done to unify the logic of min and max problems, by turning a min problem into a max one
@@ -76,7 +77,9 @@ export class Engine {
     this.objective = [...this.objective, 0];
     this.nVariables++;
     // TODO: handle artificials aside from surpluses. all cases ya3ny
-    this.variables = [...this.variables, `s${this.nVariables - this.basis.length + 1}`];
+    const surplus = `s${++this.nSurplus}`;
+    this.variables = [...this.variables, surplus];
+    this.basis = [...this.basis, surplus];
   }
 
   // checks whether objective function is optimized
@@ -99,6 +102,11 @@ export class Engine {
       }
     }
 
+    console.log("Z: " ,this.objective);
+    console.log("imostngtve: ", imostngtve);
+    
+    
+
     return imostngtve;
   }
 
@@ -114,7 +122,7 @@ export class Engine {
         -1;
     }
 
-    let mostpstve = ratios[0], imostpstve = 0;
+    let mostpstve = Math.max(...ratios), imostpstve = 0;
     for (let i = 0; i < this.nConstraints; i++) {
       if (mostpstve > ratios[i] && ratios[i] > 0) {
         mostpstve = ratios[i];
