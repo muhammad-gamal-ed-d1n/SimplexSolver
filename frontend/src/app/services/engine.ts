@@ -32,15 +32,24 @@ export class Engine {
 
     // standardize
     this.standardize();
+    console.log("VARIABLES: ", this.variables);
+    for (let eq of this.equations) {
+      console.log(eq);
+      
+    }
+    
 
 
     // set basis
     this.setBasis();
+    console.log("BASIS: ", this.basis);
+    
 
 
-
+    console.log("ISTWOPHASE?: ", this.is2phase);
     if (this.is2phase) {
       this.solvePhaseOne()
+      this.preparePhaseTwo();
     }
     this.simplex();
 
@@ -49,47 +58,44 @@ export class Engine {
 
   public simplex() {
     this.basisTranformation();
+        for (let eq of this.equations) {
+      console.log(eq);
+      
+    }
+    console.log(this.rhs);
+    
 
     // simplex loop until the problem is optimized
     while (!this.isOptimized()) {
       this.setEnteringAndLeavingVariables();
-      console.log("looping");
 
       this.basisTranformation();
+      console.log("========STEP=======");
+      console.log("BASIS: ", this.basis);
+      console.log("Equations: ");
+      for (let eq of this.equations) {
+        console.log(eq);
+      }
+      console.log("OBJFUNC");
+      console.log(this.objective);
+      console.log("=====STEP DONE=====");
+      
     }
 
-
-    console.log("BASIS AFTER PHASE 1: ", this.basis);
-    this.preparePhaseTwo();
-
     if (this.type = ProblemType.MIN) this.result *= -1;
-    console.log(this.result);
 
   }
 
   private solvePhaseOne() {
     this.setAuxiliary();
-    console.log("AUXILIARY:", this.auxiliary);
 
     this.placeholder = this.objective.slice();
     this.objective = this.auxiliary;
     this.flipSignOfObjfn();
     this.basisTranformation();
 
-    console.log("=======================================");
-    console.log("BASIS: ", this.basis);
-    console.log("VARIABLES: ", this.variables);
-    console.log("Equations");
-    for (let eq of this.equations) {
-      console.log(eq);
-
-    }
-    console.log("=======================================");
-
-
     while (!this.isOptimized()) {
       this.setEnteringAndLeavingVariables();
-      console.log("looping");
 
       this.basisTranformation();
     }
@@ -148,11 +154,6 @@ export class Engine {
 
     // remove from obj function
     this.objective.splice(column, 1);
-
-    console.log("=================FIX===============");
-    console.log(this.variables);
-    console.log(this.equations);
-    console.log("=================FIX DONE===============");
   }
 
   private setAuxiliary() {
@@ -178,9 +179,9 @@ export class Engine {
 
   // adds a 0 entry to all equations
   private addVariable(constraint: Constraints, row: number) {
-    for (let i = 0; i < this.nConstraints; i++) {
-      this.equations[i] = [...this.equations[i], 0];
-    }
+    // for (let i = 0; i < this.nConstraints; i++) {
+    //   this.equations[i] = [...this.equations[i], 0];
+    // }
 
     // TODO: handle artificials aside from surpluses. all cases ya3ny
     let surplus = '', artificial = '';
@@ -270,11 +271,6 @@ export class Engine {
       }
     }
 
-    console.log("Z: ", this.objective);
-    console.log("imostngtve: ", imostngtve);
-
-
-
     return imostngtve;
   }
 
@@ -298,6 +294,8 @@ export class Engine {
       }
     }
     console.log("Ratios: ", ratios);
+    console.log("Z: ", this.objective);
+    
 
 
     return imostpstve;
@@ -311,7 +309,8 @@ export class Engine {
     this.enteringV = this.variables[column]
     console.log("Entering: ", this.enteringV);
     console.log("Leaving: ", this.leavingV);
-
+    console.log("Z: ", this.objective);
+    
     //set entering variable
     this.basis[row] = this.enteringV;
     console.log("Basis", this.basis);
@@ -321,8 +320,6 @@ export class Engine {
   private basisTranformation() {
     for (let base of this.basis) {
       // find index of base element
-      console.log("BASE", base);
-
       let row = this.basis.findIndex(b => b == base);
       let pivotIndex = this.variables.findIndex(b => b == base);
       let pivot = this.equations[row][pivotIndex];
@@ -339,13 +336,14 @@ export class Engine {
         console.log("PIVOT AT: ", row, ", ", pivotIndex);
         console.log("Unexpected error, pivot equal to zero");
         console.log("ZERO PIVOT", this.equations[row][pivotIndex]);
-        debugger;
 
         return;
       }
       if (pivot != 1) {
         // normalize basis row
         this.normalize(row, pivot);
+        console.log("runs");
+        pivot = 1;
       }
 
       // iterate over each equation and pivotize basis column
@@ -380,5 +378,6 @@ export class Engine {
     for (let i = 0; i < this.nVariables; i++) {
       this.equations[row][i] /= pivot;
     }
+    this.rhs[row] /= pivot;
   }
 }
