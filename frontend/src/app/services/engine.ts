@@ -24,9 +24,11 @@ export class Engine {
   private artificials: string[] = [];
   private surplus: string[] = [];
   private placeholder!: number[];
-  private tmpBreak = false;
+  private tmpBreak = false; 
+  public varConstraints: Constraints[] = [];
 
   public solve() {
+    this.preprocessVariables();
     // this is done to unify the logic of min and max problems, by turning a min problem into a max one
     if (this.type == ProblemType.MAX){
       this.flipSignOfObjfn(this.objective);
@@ -355,22 +357,34 @@ export class Engine {
       let pivotIndex = this.variables.findIndex(b => b == base);
       let pivot = this.equations[row][pivotIndex];
 
+if (Math.abs(pivot) < 1e-12) {
+  console.log("BAD PIVOT DETECTED");
 
+  let repaired = false;
 
-      // TODO: if pivot equals zero it should throw an error
-      if (pivot === 0) {
-        console.log("EQUATIONS:");
-        for (let arr of this.equations) {
-          console.log(arr);
+  for (let i = 0; i < this.nConstraints; i++) {
+    if (i === row) continue;
 
-        }
-        console.log("PIVOT AT: ", row, ", ", pivotIndex);
-        console.log("Unexpected error, pivot equal to zero");
-        console.log("ZERO PIVOT", this.equations[row][pivotIndex]);
-        this.tmpBreak = true;
+    let altPivot = this.equations[i][pivotIndex];
 
-        return;
-      }
+    if (Math.abs(altPivot) > 1e-12) {
+      console.log("RECOVERED PIVOT FROM ROW", i);
+
+      [this.basis[row], this.basis[i]] = [this.basis[i], this.basis[row]];
+
+      row = i;
+      pivot = altPivot;
+      repaired = true;
+      break;
+    }
+  }
+
+  if (!repaired) {
+    console.log("UNRECOVERABLE PIVOT STATE");
+    this.tmpBreak = true;
+    return;
+  }
+}
       if (pivot != 1) {
         // normalize basis row
         this.normalize(row, pivot);
@@ -416,4 +430,67 @@ export class Engine {
     }
     this.rhs[row] /= pivot;
   }
+
+  private preprocessVariables() {
+  let newVars: string[] = [];
+  let newEqs: number[][] = [];
+  let newObj: number[] = [];
+
+  // init new equations
+  for (let i = 0; i < this.nConstraints; i++) {
+    newEqs[i] = [];
+  }
+
+  for (let j = 0; j < this.nVariables; j++) {
+    let varName = this.variables[j];
+    let constraint = this.varConstraints[j];
+
+    if (constraint === Constraints.EQUAL) {
+      let pos = varName + "''"; // x''
+      let neg = varName + "'";  // x'
+
+      newVars.push(pos, neg);
+
+      for (let i = 0; i < this.nConstraints; i++) {
+        let coeff = this.equations[i][j];
+        newEqs[i].push(coeff);     // x''
+        newEqs[i].push(-coeff);    // x'
+      }
+
+      let c = this.objective[j];
+      newObj.push(c);
+      newObj.push(-c);
+    }
+
+    else if (constraint === Constraints.LESSTHANOREQUAL) {
+      let newVar = varName + "'";
+
+      newVars.push(newVar);
+
+      for (let i = 0; i < this.nConstraints; i++) {
+        let coeff = this.equations[i][j];
+        newEqs[i].push(-coeff);
+      }
+
+      let c = this.objective[j];
+      newObj.push(-c);
+    }
+
+    else {
+      newVars.push(varName);
+
+      for (let i = 0; i < this.nConstraints; i++) {
+        newEqs[i].push(this.equations[i][j]);
+      }
+
+      newObj.push(this.objective[j]);
+    }
+  }
+
+  // apply
+  this.variables = newVars;
+  this.equations = newEqs;
+  this.objective = newObj;
+  this.nVariables = newVars.length;
+}
 }

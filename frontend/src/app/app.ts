@@ -16,26 +16,34 @@ export class App {
   constructor(private solver: Engine) { }
 
   ngOnInit() {
-   this.solver.type = ProblemType.MIN;
+   this.solver.type = ProblemType.MAX;
 
+// constraints
 this.solver.equations = [
-  [1, 1],   // x + y >= 3
-  [2, 1]    // 2x + y >= 4
+  [1, 1],   // x + y <= 3
+  [1, -1]   // x - y <= 1
 ];
 
-this.solver.rhs = [3, 4];
+this.solver.rhs = [3, 1];
 
 this.solver.constraints = [
-  Constraints.GREATERTHANOREQUAL,
-  Constraints.GREATERTHANOREQUAL
+  Constraints.LESSTHANOREQUAL,
+  Constraints.LESSTHANOREQUAL
 ];
 
-this.solver.objective = [5, 4];
+// objective
+this.solver.objective = [1, 1];
 
-this.solver.nConstraints = 2;
-this.solver.nVariables = 2;
-
+// variables
 this.solver.variables = ['x', 'y'];
+this.solver.nVariables = 2;
+this.solver.nConstraints = 2;
+
+// 🔥 critical
+this.solver.varConstraints = [
+  Constraints.EQUAL,  // x free
+  Constraints.EQUAL   // y free
+];
 
 this.solver.solve();
   }
