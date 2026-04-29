@@ -24,10 +24,13 @@ export class Engine {
   private artificials: string[] = [];
   private surplus: string[] = [];
   private placeholder!: number[];
+  private tmpBreak = false;
 
   public solve() {
     // this is done to unify the logic of min and max problems, by turning a min problem into a max one
-    this.flipSignOfObjfn();
+    if (this.type == ProblemType.MAX){
+      this.flipSignOfObjfn(this.objective);
+    }
     // TODO: check if it is already optimized
 
     // standardize
@@ -37,28 +40,27 @@ export class Engine {
       console.log(eq);
       
     }
-    
-
 
     // set basis
     this.setBasis();
     console.log("BASIS: ", this.basis);
     
-
-
     console.log("ISTWOPHASE?: ", this.is2phase);
     if (this.is2phase) {
       this.solvePhaseOne()
       this.preparePhaseTwo();
     }
+    // return
+    if (this.tmpBreak) return;
     this.simplex();
 
+    if (this.type == ProblemType.MIN) this.result *= -1;
     console.log(this.result);
   }
 
   public simplex() {
     this.basisTranformation();
-        for (let eq of this.equations) {
+    for (let eq of this.equations) {
       console.log(eq);
       
     }
@@ -66,9 +68,10 @@ export class Engine {
     
 
     // simplex loop until the problem is optimized
-    while (!this.isOptimized()) {
+    let count = 0;
+    while (!this.isOptimized() && count++ < 5 ) {
       this.setEnteringAndLeavingVariables();
-
+  
       this.basisTranformation();
       console.log("========STEP=======");
       console.log("BASIS: ", this.basis);
@@ -82,7 +85,7 @@ export class Engine {
       
     }
 
-    if (this.type = ProblemType.MIN) this.result *= -1;
+    // if (this.type = ProblemType.MIN) this.result *= -1;
 
   }
 
@@ -91,17 +94,37 @@ export class Engine {
 
     this.placeholder = this.objective.slice();
     this.objective = this.auxiliary;
-    this.flipSignOfObjfn();
+    console.log("AUXOBJ", this.objective);
+    
     this.basisTranformation();
+    console.log("AFTER TRANSFORMAION: ");
+    console.log("2PHASEVARS: ", this.variables);
+    for (let eq of this.equations) {
+      console.log(eq);
+    }
+    console.log(this.objective);
+    console.log("RHS: ", this.rhs);
+    console.log("Z: ", this.result);
+    
+    
+    
 
-    while (!this.isOptimized()) {
+    let count = 0;
+    while (!this.isOptimized() && count < 30) {
       this.setEnteringAndLeavingVariables();
-
+      console.log("HEREHERERHERHE");
+      
       this.basisTranformation();
+      if (this.tmpBreak) return;
+      count++
     }
 
     if (this.result > 0) {
       console.log("infeasible");
+      console.log(this.result);
+      console.log(this.basis);
+      
+      
       return;
 
     }
@@ -164,9 +187,9 @@ export class Engine {
     }
   }
 
-  private flipSignOfObjfn() {
+  private flipSignOfObjfn(row: number[]) {
     for (let i = 0; i < this.nVariables; i++) {
-      this.objective[i] *= -1;
+      row[i] *= -1;
     }
   }
 
@@ -253,9 +276,17 @@ export class Engine {
 
   // checks whether objective function is optimized
   private isOptimized(): boolean {
+    if (this.is2phase) {
+      if (Math.abs(this.result) <= 1e-9){
+        // for (let artificial of this.artificials) {
+        //   if (this.basis.includes(artificial)) return false;
+        // }
+        return true;
+      }
+      return false;
+    }
     for (let num of this.objective) {
       // return false if any entry is less than zero
-
       if (num < 0) return false;
     }
     return true;
@@ -271,9 +302,10 @@ export class Engine {
       }
     }
 
+    if (mostngtve >= 0) console.log("BIG ISSUE HERE");
+    
     return imostngtve;
   }
-
 
   // determines pivot row
   private findPivotRow(imostngtve: number): number {
@@ -296,8 +328,6 @@ export class Engine {
     console.log("Ratios: ", ratios);
     console.log("Z: ", this.objective);
     
-
-
     return imostpstve;
   }
 
@@ -336,13 +366,13 @@ export class Engine {
         console.log("PIVOT AT: ", row, ", ", pivotIndex);
         console.log("Unexpected error, pivot equal to zero");
         console.log("ZERO PIVOT", this.equations[row][pivotIndex]);
+        this.tmpBreak = true;
 
         return;
       }
       if (pivot != 1) {
         // normalize basis row
         this.normalize(row, pivot);
-        console.log("runs");
         pivot = 1;
       }
 
@@ -371,6 +401,11 @@ export class Engine {
       this.result -= this.rhs[row] * factor;
       // to make sure bardo
       this.objective[pivotIndex] = 0;
+    }
+
+    console.log("EQUS: ");
+    for (let eq of this.equations) {
+      console.log(eq);
     }
   }
 
