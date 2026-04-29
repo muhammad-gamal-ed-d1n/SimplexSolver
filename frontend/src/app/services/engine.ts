@@ -177,6 +177,7 @@ export class Engine {
 
     // remove from obj function
     this.objective.splice(column, 1);
+    this.nVariables--;
   }
 
   private setAuxiliary() {
