@@ -1,3 +1,3 @@
-enum ProblemType {
+export enum ProblemType {
     MAX, MIN
 }

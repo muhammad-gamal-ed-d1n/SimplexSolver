@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Constraints } from '../model/constraints';
+import { ProblemType } from '../model/problem.type';
 
 @Injectable({
   providedIn: 'root',
@@ -18,34 +19,148 @@ export class Engine {
   public enteringV!: string;
   public leavingV!: string;
   private nSurplus: number = 0;
+  private is2phase: boolean = false;
+  private auxiliary: number[] = [];
+  private artificials: string[] = [];
+  private surplus: string[] = [];
+  private placeholder!: number[];
 
-  public simplex() {
+  public solve() {
     // this is done to unify the logic of min and max problems, by turning a min problem into a max one
     this.flipSignOfObjfn();
     // TODO: check if it is already optimized
 
     // standardize
     this.standardize();
-    console.log(this.result);
-    
 
-    // set pivots
-    this.basisTranformation();
+
+    // set basis
+    this.setBasis();
+
+
+
+    if (this.is2phase) {
+      this.solvePhaseOne()
+    }
+    this.simplex();
+
     console.log(this.result);
-    
+  }
+
+  public simplex() {
+    this.basisTranformation();
 
     // simplex loop until the problem is optimized
     while (!this.isOptimized()) {
       this.setEnteringAndLeavingVariables();
       console.log("looping");
-      
-
 
       this.basisTranformation();
     }
 
+
+    console.log("BASIS AFTER PHASE 1: ", this.basis);
+    this.preparePhaseTwo();
+
+    if (this.type = ProblemType.MIN) this.result *= -1;
     console.log(this.result);
-    
+
+  }
+
+  private solvePhaseOne() {
+    this.setAuxiliary();
+    console.log("AUXILIARY:", this.auxiliary);
+
+    this.placeholder = this.objective.slice();
+    this.objective = this.auxiliary;
+    this.flipSignOfObjfn();
+    this.basisTranformation();
+
+    console.log("=======================================");
+    console.log("BASIS: ", this.basis);
+    console.log("VARIABLES: ", this.variables);
+    console.log("Equations");
+    for (let eq of this.equations) {
+      console.log(eq);
+
+    }
+    console.log("=======================================");
+
+
+    while (!this.isOptimized()) {
+      this.setEnteringAndLeavingVariables();
+      console.log("looping");
+
+      this.basisTranformation();
+    }
+
+    if (this.result > 0) {
+      console.log("infeasible");
+      return;
+
+    }
+  }
+
+  private preparePhaseTwo() {
+    this.objective = this.placeholder;
+    this.fixBasis();
+  }
+
+  private fixBasis() {
+    for (let base of this.basis) {
+      if (this.artificials.includes(base)) {
+        // remove artificial from basis
+        let row = this.basis.indexOf(base);
+        for (let i = 0; i < this.nVariables; i++) {
+          let value = this.equations[row][i];
+          let variable = this.variables[i];
+          if (value != 0 && !this.basis.includes(variable) && !this.artificials.includes(variable)) {
+            // make variable enter the basis
+            console.log("ENTERING: ", variable);
+            console.log("LEAVING: ", base);
+
+            this.basis[row] = variable;
+            console.log(this.basis);
+
+            this.basisTranformation();
+            break;
+          }
+        }
+      }
+    }
+
+    // remove all artificials
+    for (let artificial of this.artificials) {
+      // remove artificial from problem
+      let column = this.variables.indexOf(artificial);
+      this.removeVariable(column)
+    }
+  }
+
+  private removeVariable(column: number) {
+    // remove from variable list
+    this.variables.splice(column, 1);
+
+    // remove column
+    for (let i = 0; i < this.nConstraints; i++) {
+      this.equations[i].splice(column, 1);
+    }
+
+    // remove from obj function
+    this.objective.splice(column, 1);
+
+    console.log("=================FIX===============");
+    console.log(this.variables);
+    console.log(this.equations);
+    console.log("=================FIX DONE===============");
+  }
+
+  private setAuxiliary() {
+    this.auxiliary = new Array(this.nVariables).fill(0);
+    for (let artificial of this.artificials) {
+      const aindex = this.variables.indexOf(artificial);
+      this.auxiliary[aindex] = 1;
+    }
   }
 
   private flipSignOfObjfn() {
@@ -56,37 +171,90 @@ export class Engine {
 
   private standardize() {
     for (let i = 0; i < this.nConstraints; i++) {
-      if (this.constraints[i] == Constraints.LESSTHANOREQUAL) { // add surplus
-        // add a variable equal to zero to all equations
-        this.addVariable();
-        // set surplus coefficient to one
-        this.equations[i][this.nVariables - 1] = 1;
-      }
-      else if (this.constraints[i] == Constraints.GREATERTHANOREQUAL) {
-        // TODO: add artificials and implement two phase simplex
-      }
+      // add surplus/artificial variables
+      this.addVariable(this.constraints[i], i);
     }
   }
 
   // adds a 0 entry to all equations
-  private addVariable() {
+  private addVariable(constraint: Constraints, row: number) {
     for (let i = 0; i < this.nConstraints; i++) {
       this.equations[i] = [...this.equations[i], 0];
     }
 
-    this.objective = [...this.objective, 0];
-    this.nVariables++;
     // TODO: handle artificials aside from surpluses. all cases ya3ny
-    const surplus = `s${++this.nSurplus}`;
-    this.variables = [...this.variables, surplus];
-    this.basis = [...this.basis, surplus];
+    let surplus = '', artificial = '';
+    switch (constraint) {
+      case Constraints.LESSTHANOREQUAL:
+        surplus = `s${row}`;
+        this.variables = [...this.variables, surplus];
+        this.surplus = [...this.surplus, surplus];
+        this.addEntries(row, [1]);
+        break;
+      case Constraints.GREATERTHANOREQUAL:
+        artificial = `a${row}`;
+        surplus = `s${row}`;
+        this.variables = [...this.variables, surplus, artificial];
+        this.artificials = [...this.artificials, artificial]
+        this.surplus = [...this.surplus, surplus];
+        this.addEntries(row, [-1, 1]);
+        this.is2phase = true;
+        break;
+      case Constraints.EQUAL:
+        artificial = `a${row}`;
+        this.variables = [...this.variables, artificial];
+        this.artificials = [...this.artificials, artificial];
+        this.addEntries(row, [1]);
+        this.is2phase = true;
+        break;
+      default:
+        // Should not occur
+        break;
+    }
+  }
+
+  private addEntries(row: number, values: number[]) {
+    for (let value of values) {
+      for (let i = 0; i < this.nConstraints; i++) {
+        this.equations[i] = [...this.equations[i], 0];
+      }
+      this.objective = [...this.objective, 0];
+      this.nVariables++;
+      this.equations[row][this.nVariables - 1] = value;
+    }
+  }
+
+  private setBasis() {
+    this.basis = [];
+    if (this.is2phase) {
+      for (let artificial of this.artificials) {
+        this.basis = [...this.basis, artificial];
+      }
+
+      for (let surplus of this.surplus) {
+        if (this.basis.length == this.nConstraints) break;
+        let flag = false
+        for (let artificial of this.artificials) {
+          if (surplus.at(1) == artificial.at(1)) {
+            flag = true;
+            break;
+          }
+        }
+        if (flag) continue;
+        this.basis = [...this.basis, surplus];
+      }
+    } else {
+      for (let surplus of this.surplus) {
+        this.basis = [...this.basis, surplus];
+      }
+    }
   }
 
   // checks whether objective function is optimized
   private isOptimized(): boolean {
     for (let num of this.objective) {
       // return false if any entry is less than zero
-      
+
       if (num < 0) return false;
     }
     return true;
@@ -102,10 +270,10 @@ export class Engine {
       }
     }
 
-    console.log("Z: " ,this.objective);
+    console.log("Z: ", this.objective);
     console.log("imostngtve: ", imostngtve);
-    
-    
+
+
 
     return imostngtve;
   }
@@ -130,8 +298,8 @@ export class Engine {
       }
     }
     console.log("Ratios: ", ratios);
-    
-    
+
+
     return imostpstve;
   }
 
@@ -147,24 +315,33 @@ export class Engine {
     //set entering variable
     this.basis[row] = this.enteringV;
     console.log("Basis", this.basis);
-    
+
   }
 
   private basisTranformation() {
-    console.log(this.basis);
-    
-    console.log(this.variables);
-    
     for (let base of this.basis) {
       // find index of base element
+      console.log("BASE", base);
+
       let row = this.basis.findIndex(b => b == base);
       let pivotIndex = this.variables.findIndex(b => b == base);
       let pivot = this.equations[row][pivotIndex];
 
+
+
       // TODO: if pivot equals zero it should throw an error
-      if (pivot == 0) {
+      if (pivot === 0) {
+        console.log("EQUATIONS:");
+        for (let arr of this.equations) {
+          console.log(arr);
+
+        }
+        console.log("PIVOT AT: ", row, ", ", pivotIndex);
         console.log("Unexpected error, pivot equal to zero");
-        continue;
+        console.log("ZERO PIVOT", this.equations[row][pivotIndex]);
+        debugger;
+
+        return;
       }
       if (pivot != 1) {
         // normalize basis row
