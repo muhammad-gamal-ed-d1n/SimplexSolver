@@ -1,0 +1,621 @@
+.app {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.panel {
+  flex: 1;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 2rem;
+  height: fit-content;
+}
+
+.result-container {
+  flex: 2;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 0.5rem;
+}
+
+h3 {
+  color: #34495e;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+h4 {
+  color: #555;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.controls input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #2980b9;
+}
+
+.section {
+  margin-top: 1rem;
+}
+
+.row {
+  margin-bottom: 1rem;
+}
+
+.expr {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cell {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.cell input {
+  width: 80px;
+  padding: 0.25rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.cell select {
+  padding: 0.25rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.constraint-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.constraint-row select, .constraint-row input {
+  padding: 0.25rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.rhs {
+  width: 100px;
+}
+
+/* Result Styles */
+.result-summary {
+  background: #ecf0f1;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.result-summary.optimal {
+  background: #d4edda;
+  border-left: 4px solid #28a745;
+}
+
+.result-summary.infeasible {
+  background: #f8d7da;
+  border-left: 4px solid #dc3545;
+}
+
+.result-row {
+  margin-bottom: 0.5rem;
+}
+
+/* Variables Grid */
+.variables-section {
+  margin-bottom: 2rem;
+}
+
+.variables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.var-card {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e0e0e0;
+}
+
+.var-name {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.var-value {
+  font-family: monospace;
+  font-size: 1.1rem;
+  color: #27ae60;
+}
+
+/* Steps Timeline */
+.steps-section {
+  margin-top: 2rem;
+}
+
+.steps-timeline {
+  position: relative;
+}
+
+.step {
+  margin-bottom: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  transition: box-shadow 0.3s;
+}
+
+.step:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.step-header {
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.step-number {
+  font-weight: bold;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.step-type {
+  font-weight: bold;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.step-setup {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.step-standardizing {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.step-basis {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.step-phase {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.step-pivot {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.step-operation {
+  background: #e0f2f1;
+  color: #00796b;
+}
+
+.step-optimal {
+  background: #c8e6c9;
+  color: #2e7d32;
+  animation: pulse 0.5s;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.step-phase {
+  background: #fff9c4;
+  color: #f57f17;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.step-comment {
+  padding: 0.75rem 1rem;
+  background: #fffef7;
+  border-left: 3px solid #3498db;
+  margin: 0.5rem;
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.pivot-info {
+  padding: 0.75rem 1rem;
+  background: #fef9e7;
+  margin: 0.5rem;
+  border-radius: 4px;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pivot-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pivot-label {
+  font-weight: bold;
+  color: #7f8c8d;
+}
+
+.pivot-value {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.pivot-value.entering {
+  color: #27ae60;
+}
+
+.pivot-value.leaving {
+  color: #e74c3c;
+}
+
+.operations-list {
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.operations-list ul {
+  margin: 0.5rem 0 0 1.5rem;
+  padding: 0;
+}
+
+.operations-list li {
+  margin: 0.25rem 0;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.basis-info, .variables-info {
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.basis-items, .variables-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.basis-item, .var-item {
+  background: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.basis-item {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.objective-info {
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+  background: #e8eaf6;
+  border-radius: 4px;
+}
+
+.objective-row {
+  font-family: monospace;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.coeff-item {
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.result-value {
+  font-weight: bold;
+  color: #ff6f00;
+}
+
+.equations-table {
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+  overflow-x: auto;
+}
+
+.simplex-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.simplex-table th,
+.simplex-table td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.simplex-table th {
+  background: #f2f2f2;
+  font-weight: bold;
+}
+
+.basis-cell {
+  background: #e8f5e9;
+  font-weight: bold;
+}
+
+.rhs-cell {
+  background: #fff3e0;
+  font-weight: bold;
+}
+
+.result-cell {
+  background: #ffebee;
+  font-weight: bold;
+  color: #c62828;
+}
+
+.objective-row {
+  background: #e8eaf6;
+  font-weight: bold;
+}
+
+.empty-step {
+  padding: 1rem;
+  text-align: center;
+  color: #999;
+}
+
+.text-muted {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.no-steps {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  .panel {
+    position: static;
+  }
+  
+  .simplex-table {
+    font-size: 0.7rem;
+  }
+  
+  .simplex-table th,
+  .simplex-table td {
+    padding: 0.25rem;
+  }
+}
+
+/* Add these to your existing CSS file */
+
+/* Infeasible step styling */
+.step-infeasible {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.step-error {
+  background: #ffcdd2;
+  color: #b71c1c;
+}
+
+.infeasible-message {
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+
+.alert-error {
+  background: #ffebee;
+  border-left: 4px solid #c62828;
+  color: #b71c1c;
+}
+
+.alert-error strong {
+  color: #c62828;
+  font-size: 1.1rem;
+}
+
+.alert-error p {
+  margin: 0.5rem 0 0 0;
+  color: #d32f2f;
+}
+
+/* Infeasible Conclusion */
+.infeasible-conclusion {
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.infeasible-conclusion .alert {
+  background: #ffebee;
+  border-left: 4px solid #c62828;
+}
+
+.infeasible-conclusion h3 {
+  color: #c62828;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.infeasible-conclusion p {
+  color: #333;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+/* Result summary for infeasible */
+.result-summary.infeasible {
+  background: #ffebee;
+  border-left: 4px solid #c62828;
+}
+
+.result-summary.infeasible .result-row {
+  color: #c62828;
+}
+
+/* Pulse animation for infeasible steps */
+.step-infeasible {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Warning icon styling */
+.alert-error strong::before {
+  content: "⚠️ ";
+  font-size: 1.2rem;
+}
+
+/* Make table rows with infeasible data stand out */
+.simplex-table tr.infeasible-row {
+  background-color: #ffebee;
+}
+
+/* Additional styling for better readability */
+.step-comment strong {
+  color: #2c3e50;
+}
+
+.pivot-value.entering {
+  background: #e8f5e9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pivot-value.leaving {
+  background: #ffebee;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.operations-list ul li:first-child {
+  font-weight: bold;
+  color: #2980b9;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .alert {
+    font-size: 0.9rem;
+  }
+  
+  .infeasible-conclusion h3 {
+    font-size: 1.1rem;
+  }
+  
+  .step-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .step-phase {
+    align-self: flex-start;
+  }
+}

@@ -3,10 +3,11 @@ import { RouterOutlet } from '@angular/router';
 import { Engine } from './services/engine';
 import { Constraints } from './model/constraints';
 import { ProblemType } from './model/problem.type';
+import { MainLayout } from './layout/main.layout';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, MainLayout],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -16,35 +17,35 @@ export class App {
   constructor(private solver: Engine) { }
 
   ngOnInit() {
-   this.solver.type = ProblemType.MAX;
+//    this.solver.type = ProblemType.MAX;
 
-// constraints
-this.solver.equations = [
-  [1, 1],   // x + y <= 3
-  [1, -1]   // x - y <= 1
-];
+// // constraints
+// this.solver.equations = [
+//   [1, 1],   // x + y <= 3
+//   [1, -1]   // x - y <= 1
+// ];
 
-this.solver.rhs = [3, 1];
+// this.solver.rhs = [3, 1];
 
-this.solver.constraints = [
-  Constraints.LESSTHANOREQUAL,
-  Constraints.LESSTHANOREQUAL
-];
+// this.solver.constraints = [
+//   Constraints.LESSTHANOREQUAL,
+//   Constraints.LESSTHANOREQUAL
+// ];
 
-// objective
-this.solver.objective = [1, 1];
+// // objective
+// this.solver.objective = [1, 1];
 
-// variables
-this.solver.variables = ['x', 'y'];
-this.solver.nVariables = 2;
-this.solver.nConstraints = 2;
+// // variables
+// this.solver.variables = ['x', 'y'];
+// this.solver.nVariables = 2;
+// this.solver.nConstraints = 2;
 
-// 🔥 critical
-this.solver.varConstraints = [
-  Constraints.EQUAL,  // x free
-  Constraints.EQUAL   // y free
-];
+// // 🔥 critical
+// this.solver.varConstraints = [
+//   Constraints.EQUAL,  // x free
+//   Constraints.EQUAL   // y free
+// ];
 
-this.solver.solve();
+// this.solver.solve();
   }
 }

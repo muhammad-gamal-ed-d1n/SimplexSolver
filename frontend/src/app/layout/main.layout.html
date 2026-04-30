@@ -1,0 +1,221 @@
+<div class="app">
+  <div class="panel">
+    <h2>Simplex Solver</h2>
+
+    <div class="controls">
+      <input type="number" [(ngModel)]="nVars" placeholder="No of variables">
+      <input type="number" [(ngModel)]="nConstraints" placeholder="No of constraints">
+      <button (click)="generateTable()">Generate Table</button>
+    </div>
+
+    <div *ngIf="generated" class="section">
+      <h3>Objective</h3>
+      <div class="row">
+        <select [(ngModel)]="type">
+          <option [ngValue]="ProblemType.MAX">Max</option>
+          <option [ngValue]="ProblemType.MIN">Min</option>
+        </select>
+
+        <div class="expr">
+          <div *ngFor="let v of variables; let i = index" class="cell">
+            <span>{{ v }}</span>
+            <input type="number" [(ngModel)]="objective[i]">
+            <select [(ngModel)]="varConstraints[i]">
+              <option [ngValue]="Constraints.LESSTHANOREQUAL"><= 0</option>
+              <option [ngValue]="Constraints.GREATERTHANOREQUAL">>= 0</option>
+              <option [ngValue]="Constraints.EQUAL">= 0</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <h3>Constraints</h3>
+      <div *ngFor="let c of constraints; let i = index" class="constraint-row">
+        <div class="expr">
+          <div *ngFor="let v of variables; let j = index" class="cell">
+            <span>{{ v }}</span>
+            <input type="number" [(ngModel)]="equations[i][j]">
+          </div>
+        </div>
+        <select [(ngModel)]="constraints[i]">
+          <option [ngValue]="Constraints.LESSTHANOREQUAL"><=</option>
+          <option [ngValue]="Constraints.GREATERTHANOREQUAL">>=</option>
+          <option [ngValue]="Constraints.EQUAL">=</option>
+        </select>
+        <input type="number" [(ngModel)]="rhs[i]" class="rhs">
+      </div>
+      <button (click)="solve()">Solve</button>
+    </div>
+  </div>
+
+  <div *ngIf="result" class="result-container">
+    <h2>Solution Result</h2>
+
+    <!-- Final Result Summary -->
+    <div class="result-summary" [ngClass]="{
+      'optimal': result.status === 'OPTIMAL',
+      'infeasible': result.status === 'INFEASIBLE'
+    }">
+      <div class="result-row">
+        <strong>Status:</strong> {{ result.status || 'N/A' }}
+      </div>
+      <div class="result-row">
+        <strong>Problem Type:</strong> {{ result.problemType || 'N/A' }}
+      </div>
+      <div class="result-row">
+        <strong>Objective Value:</strong> {{ result.value !== undefined ? result.value : 'N/A' }}
+      </div>
+    </div>
+
+    <!-- Variable Values (only show if optimal) -->
+    <div class="variables-section" *ngIf="result.status === 'OPTIMAL' && result.variables && objectKeys(result.variables).length > 0">
+      <h3>Optimal Solution</h3>
+      <div class="variables-grid">
+        <div class="var-card" *ngFor="let key of objectKeys(result.variables)">
+          <span class="var-name">{{ key }}</span>
+          <span class="var-value">{{ result.variables[key] | number:'1.4-4' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Steps Display -->
+    <div class="steps-section" *ngIf="result.steps && result.steps.length > 0">
+      <h3>Solution Steps ({{ result.steps.length }})</h3>
+      <div class="steps-timeline">
+        <div class="step" *ngFor="let step of result.steps; let stepIndex = index">
+          <div class="step-header">
+            <div class="step-number">Step {{ stepIndex + 1 }}</div>
+            <div class="step-type" [ngClass]="{
+              'step-setup': step.type === 'Setup',
+              'step-standardizing': step.type === 'Standardizing',
+              'step-basis': step.type === 'Set Basis',
+              'step-phase': step.type === 'Phase Transition',
+              'step-pivot': step.type === 'Pivot Selection',
+              'step-operation': step.type === 'Pivot Operation',
+              'step-optimal': step.type === 'Optimal',
+              'step-infeasible': step.type === 'Infeasible',
+              'step-error': step.type === 'Error'
+            }">
+              {{ step.type || 'Unknown Step' }}
+            </div>
+            <div class="step-phase" *ngIf="step.phase">
+              Phase {{ step.phase }}
+            </div>
+          </div>
+
+          <!-- Comment -->
+          <div class="step-comment" *ngIf="step.comment">
+            <strong>Comment:</strong> {{ step.comment }}
+          </div>
+
+          <!-- Infeasible Message (special handling) -->
+          <div class="infeasible-message" *ngIf="step.type === 'Infeasible'">
+            <div class="alert alert-error">
+              <strong>Infeasible Problem Detected</strong>
+              <p *ngIf="step.result !== undefined">Auxiliary Objective Value: {{ step.result | number:'1.6-6' }}</p>
+            </div>
+          </div>
+
+          <!-- Pivot Information -->
+          <div class="pivot-info" *ngIf="step.enteringV || step.leavingV || (step.pivotRow !== undefined && step.pivotRow !== -1)">
+            <div class="pivot-row" *ngIf="step.enteringV">
+              <span class="pivot-label">Entering Variable:</span>
+              <span class="pivot-value entering">{{ step.enteringV }}</span>
+            </div>
+            <div class="pivot-row" *ngIf="step.leavingV">
+              <span class="pivot-label">Leaving Variable:</span>
+              <span class="pivot-value leaving">{{ step.leavingV }}</span>
+            </div>
+            <div class="pivot-row" *ngIf="step.pivotRow !== undefined && step.pivotRow !== -1 && step.pivotCol !== undefined && step.pivotCol !== -1">
+              <span class="pivot-label">Pivot Position:</span>
+              <span class="pivot-value">Row {{ step.pivotRow + 1 }}, Column {{ step.pivotCol + 1 }}</span>
+            </div>
+          </div>
+
+          <!-- Operations List -->
+          <div class="operations-list" *ngIf="step.operations && step.operations.length > 0">
+            <h4>Operations:</h4>
+            <ul>
+              <li *ngFor="let op of step.operations">{{ op }}</li>
+            </ul>
+          </div>
+
+          <!-- Basis Display -->
+          <div class="basis-info" *ngIf="step.basis && step.basis.length > 0">
+            <h4>Current Basis:</h4>
+            <div class="basis-items">
+              <span class="basis-item" *ngFor="let base of step.basis">{{ base }}</span>
+            </div>
+          </div>
+
+          <!-- Variables Display -->
+          <div class="variables-info" *ngIf="step.variables && step.variables.length > 0">
+            <h4>Variables:</h4>
+            <div class="variables-list">
+              <span class="var-item" *ngFor="let varName of step.variables">{{ varName }}</span>
+            </div>
+          </div>
+
+          <!-- Objective Row -->
+          <div class="objective-info" *ngIf="step.objective && step.objective.length > 0">
+            <h4>Objective Function (Z):</h4>
+            <div class="objective-row">
+              <ng-container *ngFor="let coeff of step.objective; let i = index">
+                <span class="coeff-item" *ngIf="coeff !== undefined">
+                  {{ coeff >= 0 && i > 0 ? '+' : '' }}{{ coeff | number:'1.2-2' }}x{{ i }}
+                </span>
+              </ng-container>
+              <span class="result-value" *ngIf="step.result !== undefined"> = {{ step.result | number:'1.4-4' }}</span>
+            </div>
+          </div>
+
+          <!-- Equations Table -->
+          <div class="equations-table" *ngIf="step.equations && step.equations.length > 0">
+            <h4>Current System:</h4>
+            <table class="simplex-table">
+              <thead>
+                <tr>
+                  <th>Basis</th>
+                  <th *ngFor="let varName of step.variables || []">{{ varName || '?' }}</th>
+                  <th>RHS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let eq of step.equations; let i = index">
+                  <td class="basis-cell">{{ (step.basis && step.basis[i]) || '-' }}</td>
+                  <td *ngFor="let coeff of eq">{{ coeff !== undefined ? (coeff | number:'1.2-2') : '0' }}</td>
+                  <td class="rhs-cell">{{ (step.rhs && step.rhs[i]) !== undefined ? ((step.rhs[i]) | number:'1.2-2') : '0' }}</td>
+                </tr>
+                <tr class="objective-row" *ngIf="step.objective && step.objective.length > 0">
+                  <td>Z</td>
+                  <td *ngFor="let coeff of step.objective">{{ coeff !== undefined ? (coeff | number:'1.2-2') : '0' }}</td>
+                  <td class="result-cell">{{ step.result !== undefined ? (step.result | number:'1.2-2') : '0' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Fallback for empty steps -->
+          <div class="empty-step" *ngIf="!step.comment && (!step.operations || step.operations.length === 0) && (!step.equations || step.equations.length === 0)">
+            <p class="text-muted">No additional data available for this step.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Steps Message -->
+    <div class="no-steps" *ngIf="!result.steps || result.steps.length === 0">
+      <p>No solution steps available.</p>
+    </div>
+
+    <!-- Infeasible Conclusion Summary -->
+    <div class="infeasible-conclusion" *ngIf="result.status === 'INFEASIBLE'">
+      <div class="alert alert-error">
+        <h3>Problem is Infeasible</h3>
+        <p>The system of constraints has no feasible solution that satisfies all constraints simultaneously.</p>
+        <p>This was detected during Phase 1 of the Two-Phase Simplex Method because the auxiliary objective value is greater than zero.</p>
+        <p>Check the steps above for more details on where infeasibility was detected.</p>
+      </div>
+    </div>
+  </div>
+</div>
